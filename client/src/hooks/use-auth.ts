@@ -43,6 +43,15 @@ export function useAuth() {
 
   const login = async () => {
     try {
+      if (!import.meta.env.VITE_FIREBASE_API_KEY) {
+        toast({
+          title: "Configuration Error",
+          description: "Firebase credentials are not configured. Please add them to continue.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       setLoading(true);
       const result = await signInWithPopup(auth, googleProvider);
 
@@ -50,20 +59,12 @@ export function useAuth() {
         throw new Error("No user data returned from Google");
       }
 
-      // Log successful authentication
-      console.log("Successfully authenticated with Firebase:", result.user.uid);
-
       toast({
         title: "Success",
         description: "Successfully signed in!",
       });
     } catch (error: any) {
-      console.error("Detailed sign-in error:", {
-        code: error.code,
-        message: error.message,
-        email: error.email,
-        credential: error.credential
-      });
+      console.error("Sign-in error:", error);
 
       let errorMessage = "Failed to sign in with Google";
 
@@ -74,6 +75,8 @@ export function useAuth() {
         errorMessage = "Sign-in was cancelled";
       } else if (error.code === 'auth/unauthorized-domain') {
         errorMessage = "This domain is not authorized for sign-in";
+      } else if (error.code === 'auth/configuration-not-found') {
+        errorMessage = "Firebase configuration is missing or invalid";
       }
 
       toast({
@@ -81,7 +84,6 @@ export function useAuth() {
         description: errorMessage,
         variant: "destructive",
       });
-      throw error;
     } finally {
       setLoading(false);
     }
@@ -101,7 +103,6 @@ export function useAuth() {
         description: "Failed to sign out",
         variant: "destructive",
       });
-      throw error;
     }
   };
 

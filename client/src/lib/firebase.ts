@@ -2,27 +2,28 @@ import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
-// Add validation for required environment variables
+// Check if any required environment variables are missing
 const requiredEnvVars = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// Check if any required environment variables are missing
 Object.entries(requiredEnvVars).forEach(([key, value]) => {
   if (!value) {
     throw new Error(`Missing required environment variable: ${key}`);
   }
 });
 
+
+// Firebase configuration with empty credentials as fallback
 const firebaseConfig = {
-  apiKey: requiredEnvVars.apiKey,
-  authDomain: `${requiredEnvVars.projectId}.firebaseapp.com`,
-  projectId: requiredEnvVars.projectId,
-  storageBucket: `${requiredEnvVars.projectId}.appspot.com`,
-  messagingSenderId: requiredEnvVars.projectId,
-  appId: requiredEnvVars.appId
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
+  authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID || ""}.firebaseapp.com`,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "",
+  storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID || ""}.appspot.com`,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || ""
 };
 
 // Initialize Firebase
