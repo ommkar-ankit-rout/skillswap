@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -14,11 +14,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Send } from "lucide-react";
 import type { Chat, Message, User } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useWebSocket } from "@/hooks/use-websocket";
+import { useToast } from "@/hooks/use-toast";
 
-export default function Chat() {
+export default function ChatPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [newMessage, setNewMessage] = useState("");
+  const [localMessages, setLocalMessages] = useState<Message[]>([]);
+  const messageEndRef = useRef<HTMLDivElement>(null);
+  const { isConnected, sendMessage, socket } = useWebSocket();
 
   const { data: chats } = useQuery<Chat[]>({
     queryKey: ["/api/chats", user?.id],
@@ -33,20 +39,77 @@ export default function Chat() {
     queryKey: ["/api/users"],
   });
 
-  async function sendMessage(e: React.FormEvent) {
+  useEffect(() => {
+    if (messages) {
+      setLocalMessages(messages);
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    if (socket) {
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'chat') {
+          setLocalMessages(prev => [...prev, {
+            id: Date.now(), // Temporary ID for local message
+            chatId: selectedChat?.id || 0,
+            senderId: data.senderId,
+            content: data.message,
+            createdAt: data.timestamp,
+          }]);
+        }
+      };
+    }
+  }, [socket, selectedChat]);
+
+  useEffect(() => {
+    messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [localMessages]);
+
+  async function handleSendMessage(e: React.FormEvent) {
     e.preventDefault();
-    if (!newMessage.trim() || !selectedChat) return;
+    if (!newMessage.trim() || !selectedChat || !user) return;
 
     try {
-      await apiRequest("POST", "/api/messages", {
-        chatId: selectedChat.id,
-        senderId: user?.id,
-        content: newMessage,
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/messages", selectedChat.id] });
-      setNewMessage("");
+      // Send message through WebSocket
+      const otherUserId = selectedChat.userOneId === user.id 
+        ? selectedChat.userTwoId 
+        : selectedChat.userOneId;
+
+      const sent = sendMessage(otherUserId, newMessage);
+
+      if (sent) {
+        // Add message to local state immediately
+        setLocalMessages(prev => [...prev, {
+          id: Date.now(), // Temporary ID for local message
+          chatId: selectedChat.id,
+          senderId: user.id,
+          content: newMessage,
+          createdAt: new Date().toISOString(),
+        }]);
+
+        // Also save to backend
+        await apiRequest("POST", "/api/messages", {
+          chatId: selectedChat.id,
+          senderId: user.id,
+          content: newMessage,
+        });
+
+        setNewMessage("");
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to send message. Please check your connection.",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       console.error("Failed to send message:", error);
+      toast({
+        title: "Error",
+        description: "Failed to send message",
+        variant: "destructive",
+      });
     }
   }
 
@@ -59,7 +122,12 @@ export default function Chat() {
     <div className="grid md:grid-cols-[300px_1fr] gap-6">
       <Card>
         <CardHeader>
-          <CardTitle>Conversations</CardTitle>
+          <CardTitle className="flex items-center justify-between">
+            Conversations
+            {isConnected && (
+              <span className="text-xs text-green-500">●&nbsp;Connected</span>
+            )}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[600px]">
@@ -101,7 +169,7 @@ export default function Chat() {
             <CardContent>
               <ScrollArea className="h-[500px] pr-4">
                 <div className="space-y-4">
-                  {messages?.map((message) => (
+                  {localMessages.map((message) => (
                     <div
                       key={message.id}
                       className={`flex ${
@@ -121,18 +189,20 @@ export default function Chat() {
                       </div>
                     </div>
                   ))}
+                  <div ref={messageEndRef} />
                 </div>
               </ScrollArea>
               <form
-                onSubmit={sendMessage}
+                onSubmit={handleSendMessage}
                 className="mt-4 flex items-center gap-2"
               >
                 <Input
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   placeholder="Type a message..."
+                  disabled={!isConnected}
                 />
-                <Button type="submit" size="icon">
+                <Button type="submit" size="icon" disabled={!isConnected}>
                   <Send className="h-4 w-4" />
                 </Button>
               </form>

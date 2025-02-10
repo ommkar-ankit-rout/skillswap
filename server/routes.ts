@@ -1,8 +1,12 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { insertUserSchema, insertSkillSchema, insertItemSchema } from "@shared/schema";
 import { z } from "zod";
+
+// Store WebSocket connections with their associated user IDs
+const clients = new Map<number, WebSocket>();
 
 export function registerRoutes(app: Express): Server {
   // Auth routes
@@ -91,6 +95,51 @@ export function registerRoutes(app: Express): Server {
 
   // Create HTTP server
   const httpServer = createServer(app);
+
+  // Initialize WebSocket server
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+
+  wss.on('connection', (ws) => {
+    ws.on('message', (rawData) => {
+      try {
+        const data = JSON.parse(rawData.toString());
+
+        // Handle user authentication
+        if (data.type === 'auth') {
+          const userId = data.userId;
+          clients.set(userId, ws);
+          return;
+        }
+
+        // Handle chat messages
+        if (data.type === 'chat') {
+          const { senderId, receiverId, message } = data;
+          const receiverWs = clients.get(receiverId);
+
+          if (receiverWs?.readyState === WebSocket.OPEN) {
+            receiverWs.send(JSON.stringify({
+              type: 'chat',
+              senderId,
+              message,
+              timestamp: new Date().toISOString()
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('WebSocket message error:', error);
+      }
+    });
+
+    ws.on('close', () => {
+      // Remove disconnected clients
+      for (const [userId, client] of clients.entries()) {
+        if (client === ws) {
+          clients.delete(userId);
+          break;
+        }
+      }
+    });
+  });
 
   return httpServer;
 }
