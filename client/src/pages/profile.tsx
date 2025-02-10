@@ -127,8 +127,8 @@ export default function Profile() {
         <CardContent className="space-y-6">
           <div className="flex items-center gap-4">
             <Avatar className="h-20 w-20">
-              <AvatarImage src={user?.profilePicture} alt={user?.name} />
-              <AvatarFallback>{user?.name?.[0]}</AvatarFallback>
+              <AvatarImage src={user?.profilePicture || undefined} alt={user?.name} />
+              <AvatarFallback>{user?.name?.[0] || '?'}</AvatarFallback>
             </Avatar>
             <div>
               <h2 className="text-2xl font-bold">{user?.name}</h2>

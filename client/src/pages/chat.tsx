@@ -74,8 +74,8 @@ export default function Chat() {
                   }`}
                 >
                   <Avatar>
-                    <AvatarImage src={otherUser?.profilePicture} />
-                    <AvatarFallback>{otherUser?.name?.[0]}</AvatarFallback>
+                    <AvatarImage src={otherUser?.profilePicture || undefined} />
+                    <AvatarFallback>{otherUser?.name?.[0] || '?'}</AvatarFallback>
                   </Avatar>
                   <div>
                     <div className="font-medium">{otherUser?.name}</div>

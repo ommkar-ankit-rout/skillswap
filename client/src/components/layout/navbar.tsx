@@ -37,16 +37,18 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
             <Link href="/">
-              <a className="text-xl font-bold">UniExchange</a>
+              <Button variant="link" className="text-xl font-bold">
+                UniExchange
+              </Button>
             </Link>
             <div className="hidden md:block ml-10">
               <div className="flex items-center space-x-4">
                 {links.map((link) => (
                   <Link key={link.href} href={link.href}>
-                    <a className="flex items-center px-3 py-2 rounded-md text-sm font-medium hover:bg-accent">
+                    <Button variant="ghost" className="flex items-center">
                       <link.icon className="h-4 w-4 mr-2" />
                       {link.label}
-                    </a>
+                    </Button>
                   </Link>
                 ))}
               </div>
@@ -59,7 +61,7 @@ export function Navbar() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.profilePicture} alt={user.name} />
+                      <AvatarImage src={user.profilePicture || undefined} alt={user.name} />
                       <AvatarFallback>{user.name[0]}</AvatarFallback>
                     </Avatar>
                   </Button>
