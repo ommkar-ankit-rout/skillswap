@@ -30,7 +30,7 @@ export function useAuth() {
         console.error("Error syncing user:", error);
         toast({
           title: "Error",
-          description: "Failed to sync user data",
+          description: "Failed to sync user data with server",
           variant: "destructive",
         });
       } finally {
@@ -45,18 +45,40 @@ export function useAuth() {
     try {
       setLoading(true);
       const result = await signInWithPopup(auth, googleProvider);
+
       if (!result.user) {
         throw new Error("No user data returned from Google");
       }
+
+      // Log successful authentication
+      console.log("Successfully authenticated with Firebase:", result.user.uid);
+
       toast({
         title: "Success",
         description: "Successfully signed in!",
       });
     } catch (error: any) {
-      console.error("Error signing in:", error);
+      console.error("Detailed sign-in error:", {
+        code: error.code,
+        message: error.message,
+        email: error.email,
+        credential: error.credential
+      });
+
+      let errorMessage = "Failed to sign in with Google";
+
+      // Handle specific error cases
+      if (error.code === 'auth/popup-blocked') {
+        errorMessage = "Please enable popups for this site to sign in";
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        errorMessage = "Sign-in was cancelled";
+      } else if (error.code === 'auth/unauthorized-domain') {
+        errorMessage = "This domain is not authorized for sign-in";
+      }
+
       toast({
         title: "Error",
-        description: error.message || "Failed to sign in with Google",
+        description: errorMessage,
         variant: "destructive",
       });
       throw error;

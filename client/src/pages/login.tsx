@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SiGoogle } from "react-icons/si";
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, loading } = useAuth();
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center">
@@ -17,9 +17,19 @@ export default function Login() {
             onClick={login} 
             className="w-full"
             size="lg"
+            disabled={loading}
           >
-            <SiGoogle className="mr-2 h-4 w-4" />
-            Sign in with Google
+            {loading ? (
+              <span className="flex items-center">
+                <span className="animate-spin mr-2">◌</span>
+                Signing in...
+              </span>
+            ) : (
+              <>
+                <SiGoogle className="mr-2 h-4 w-4" />
+                Sign in with Google
+              </>
+            )}
           </Button>
         </CardContent>
       </Card>
