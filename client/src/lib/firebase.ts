@@ -2,13 +2,27 @@ import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
-const firebaseConfig = {
+// Add validation for required environment variables
+const requiredEnvVars = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.appspot.com`,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+};
+
+// Check if any required environment variables are missing
+Object.entries(requiredEnvVars).forEach(([key, value]) => {
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${key}`);
+  }
+});
+
+const firebaseConfig = {
+  apiKey: requiredEnvVars.apiKey,
+  authDomain: `${requiredEnvVars.projectId}.firebaseapp.com`,
+  projectId: requiredEnvVars.projectId,
+  storageBucket: `${requiredEnvVars.projectId}.appspot.com`,
+  messagingSenderId: requiredEnvVars.projectId,
+  appId: requiredEnvVars.appId
 };
 
 // Initialize Firebase

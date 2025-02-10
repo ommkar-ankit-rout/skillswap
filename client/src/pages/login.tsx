@@ -12,7 +12,7 @@ export default function Login() {
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Welcome to UniExchange</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <Button 
             onClick={login} 
             className="w-full"
@@ -31,6 +31,9 @@ export default function Login() {
               </>
             )}
           </Button>
+          <p className="text-sm text-center text-muted-foreground">
+            By signing in, you agree to our Terms of Service and Privacy Policy
+          </p>
         </CardContent>
       </Card>
     </div>
